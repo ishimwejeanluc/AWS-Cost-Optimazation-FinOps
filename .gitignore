@@ -1,0 +1,23 @@
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/*.tfplan
+terraform/crash.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+scripts/reports/
+
+# Evidence (add manually when ready to commit)
+audit-evidence/
+
+# OS
+.DS_Store
+Thumbs.db
