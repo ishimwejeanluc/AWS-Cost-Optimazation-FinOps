@@ -19,11 +19,11 @@ Remove resources that incur cost but deliver no value.
 
 ```bash
 # Scan everything
-python scripts/find_zombie_assets.py --region us-east-1
+./scripts/find_zombie_assets.sh --region us-east-1
 
 # Delete unattached EBS volumes
-python scripts/gc_ebs_volumes.py --region us-east-1          # dry run
-python scripts/gc_ebs_volumes.py --region us-east-1 --delete # delete
+./scripts/gc_ebs_volumes.sh --region us-east-1          # dry run
+./scripts/gc_ebs_volumes.sh --region us-east-1 --delete # delete
 
 # Release orphaned EIPs
 aws ec2 describe-addresses \
@@ -75,7 +75,7 @@ Untagged resources are hard to attribute and expensive to clean up.
 
 Run the cost report weekly:
 ```bash
-python scripts/generate_cost_report.py --budget 50
+./scripts/generate_cost_report.sh --budget 50
 ```
 It shows spend by service, trend, untagged cost, and forecast vs budget.
 Enable Cost Anomaly Detection for alerts between reports.

@@ -19,7 +19,7 @@ Three volumes left over from a load test that nobody cleaned up.
 | vol-0395403... | 100 GB | gp2 | 62d | $10.00 |
 | vol-02e226... | 200 GB | io1 | 89d | $25.00 |
 
-**Fixed:** Deleted with `gc_ebs_volumes.py --delete`.
+**Fixed:** Deleted with `gc_ebs_volumes.sh --delete`.
 
 ### Orphaned Elastic IPs
 

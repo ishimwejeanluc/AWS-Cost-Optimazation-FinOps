@@ -34,10 +34,9 @@ finops/
 │       ├── governance/                # Budgets, SNS, Config rules, S3
 │       └── compute_optimized/         # Mixed-Instance ASG (Spot + On-Demand)
 ├── scripts/
-│   ├── requirements.txt
-│   ├── find_zombie_assets.py          # Full zombie asset scanner
-│   ├── gc_ebs_volumes.py              # Unattached EBS garbage collector
-│   └── generate_cost_report.py        # Cost Explorer FinOps report
+│   ├── find_zombie_assets.sh          # Full zombie asset scanner
+│   ├── gc_ebs_volumes.sh              # Unattached EBS garbage collector
+│   └── generate_cost_report.sh        # Cost Explorer FinOps report
 ├── docs/
 │   ├── AUDIT_REPORT.md                # Findings, remediation log, evidence
 │   ├── TAGGING_POLICY.md              # Mandatory tags, SCP, enforcement
@@ -54,7 +53,7 @@ finops/
 ### Prerequisites
 
 - Terraform ≥ 1.5
-- Python 3.9+ with `pip`
+- AWS CLI v2 and `jq` (the scripts auto-install `jq` if it is missing)
 - AWS credentials configured (`aws configure` or environment variables)
 - An AWS account with billing access enabled
 
@@ -72,37 +71,38 @@ terraform apply tfplan
 
 > After `terraform apply`, confirm the SNS subscription email that arrives in your inbox to activate budget alerts.
 
-### 2 — Install Script Dependencies
+### 2 — Prepare the Scripts
 
 ```bash
 cd scripts/
-pip install -r requirements.txt
+chmod +x *.sh   # make the scripts executable (first time only)
+# aws CLI v2 and jq are required; the scripts auto-install jq if it is missing.
 ```
 
 ### 3 — Detect Zombie Assets
 
 ```bash
 # Scan for all zombie asset types
-python find_zombie_assets.py --region us-east-1
+./find_zombie_assets.sh --region us-east-1
 
 # Export findings to JSON (CI-friendly: exits 1 if findings exist)
-python find_zombie_assets.py --region us-east-1 --output-json reports/findings.json
+./find_zombie_assets.sh --region us-east-1 --output-json reports/findings.json
 ```
 
 ### 4 — Remediate
 
 ```bash
 # Dry-run: preview EBS volumes that would be deleted
-python gc_ebs_volumes.py --region us-east-1
+./gc_ebs_volumes.sh --region us-east-1
 
 # Live delete (irreversible — use with care)
-python gc_ebs_volumes.py --region us-east-1 --delete --yes
+./gc_ebs_volumes.sh --region us-east-1 --delete --yes
 ```
 
 ### 5 — Generate Cost Report
 
 ```bash
-python generate_cost_report.py --budget 50 --months 3 --output reports/$(date +%Y-%m).json
+./generate_cost_report.sh --budget 50 --months 3 --output reports/$(date +%Y-%m).json
 ```
 
 ### 6 — Teardown
@@ -154,9 +154,9 @@ Intentional waste used to validate detection scripts:
 
 | Script | Purpose | Key Flags |
 |---|---|---|
-| `find_zombie_assets.py` | Scans for idle EC2, unattached EBS, orphaned EIPs, unused snapshots | `--cpu-threshold`, `--idle-days`, `--output-json FILE` |
-| `gc_ebs_volumes.py` | Deletes unattached EBS volumes | `--delete`, `--min-age-days N`, `--exclude-tag KEY=VALUE`, `--yes` |
-| `generate_cost_report.py` | Pulls Cost Explorer data into a structured FinOps report | `--budget FLOAT`, `--months INT`, `--output FILE` |
+| `find_zombie_assets.sh` | Scans for idle EC2, unattached EBS, orphaned EIPs, unused snapshots | `--cpu-threshold`, `--idle-days`, `--output-json FILE` |
+| `gc_ebs_volumes.sh` | Deletes unattached EBS volumes | `--delete`, `--min-age-days N`, `--exclude-tag KEY=VALUE`, `--yes` |
+| `generate_cost_report.sh` | Pulls Cost Explorer data into a structured FinOps report | `--budget FLOAT`, `--months INT`, `--output FILE` |
 
 All scripts exit with code `1` when findings exist — suitable as CI quality gates.
 
