@@ -1,11 +1,11 @@
 # Terraform
-terraform/.terraform/
-terraform/.terraform.lock.hcl
-terraform/terraform.tfvars
-terraform/terraform.tfstate
-terraform/terraform.tfstate.backup
-terraform/*.tfplan
-terraform/crash.log
+infra/**/.terraform/
+infra/**/.terraform.lock.hcl
+infra/**/terraform.tfvars
+infra/**/terraform.tfstate
+infra/**/terraform.tfstate.backup
+infra/**/*.tfplan
+infra/**/crash.log
 
 # Python
 __pycache__/

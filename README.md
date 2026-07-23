@@ -23,12 +23,14 @@ This project implements a full **FinOps audit cycle** against an AWS sandbox acc
 
 ```
 finops/
-├── terraform/
+├── infra/
 │   ├── providers.tf                   # AWS provider + default tags
 │   ├── variables.tf                   # Root input variables
 │   ├── main.tf                        # Root module orchestration
 │   ├── outputs.tf                     # Key resource IDs and ARNs
+│   ├── backend.tf                     # S3 remote state + DynamoDB lock
 │   ├── terraform.tfvars.example       # Variable template
+│   ├── bootstrap/                     # Creates the S3/DynamoDB remote backend (run first)
 │   └── modules/
 │       ├── wasteful_resources/        # Zombie asset baseline (demo)
 │       ├── governance/                # Budgets, SNS, Config rules, S3
@@ -57,21 +59,32 @@ finops/
 - AWS credentials configured (`aws configure` or environment variables)
 - An AWS account with billing access enabled
 
-### 1 — Deploy the Infrastructure
+### 1 — Bootstrap the Remote State Backend (run once)
 
 ```bash
-cd terraform/
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars: set alert_email and aws_region
-
+cd infra/bootstrap/
 terraform init
+terraform apply        # creates the S3 state bucket + DynamoDB lock table
+```
+
+> Skip this only if you prefer local state — in that case rename `infra/backend.tf`
+> before the next step so Terraform falls back to a local state file.
+
+### 2 — Deploy the Infrastructure
+
+```bash
+cd infra/
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars: set alert_email, aws_region, and enable_config = true
+
+terraform init         # uses the S3 backend created by the bootstrap
 terraform plan -out=tfplan
 terraform apply tfplan
 ```
 
 > After `terraform apply`, confirm the SNS subscription email that arrives in your inbox to activate budget alerts.
 
-### 2 — Prepare the Scripts
+### 3 — Prepare the Scripts
 
 ```bash
 cd scripts/
@@ -79,7 +92,7 @@ chmod +x *.sh   # make the scripts executable (first time only)
 # aws CLI v2 and jq are required; the scripts auto-install jq if it is missing.
 ```
 
-### 3 — Detect Zombie Assets
+### 4 — Detect Zombie Assets
 
 ```bash
 # Scan for all zombie asset types
@@ -89,7 +102,7 @@ chmod +x *.sh   # make the scripts executable (first time only)
 ./find_zombie_assets.sh --region us-east-1 --output-json reports/findings.json
 ```
 
-### 4 — Remediate
+### 5 — Remediate
 
 ```bash
 # Dry-run: preview EBS volumes that would be deleted
@@ -99,17 +112,19 @@ chmod +x *.sh   # make the scripts executable (first time only)
 ./gc_ebs_volumes.sh --region us-east-1 --delete --yes
 ```
 
-### 5 — Generate Cost Report
+### 6 — Generate Cost Report
 
 ```bash
 ./generate_cost_report.sh --budget 50 --months 3 --output reports/$(date +%Y-%m).json
 ```
 
-### 6 — Teardown
+### 7 — Teardown
 
 ```bash
-cd terraform/
+cd infra/
 terraform destroy
+# The remote-state bucket/table in infra/bootstrap/ persist by design;
+# see infra/bootstrap/README.md to remove them.
 ```
 
 ---
