@@ -29,6 +29,14 @@ jobs:
       - name: Terraform validate
         run: terraform validate
 
+      - name: Terraform init (bootstrap)
+        working-directory: infra/bootstrap
+        run: terraform init -reconfigure -backend=false
+
+      - name: Terraform validate (bootstrap)
+        working-directory: infra/bootstrap
+        run: terraform validate
+
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
         with:
